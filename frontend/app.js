@@ -1,125 +1,35 @@
-const API_BASE = window.LIBRARY_API_BASE || 'http://localhost:3000/api';
-
-const loginView = document.getElementById('login-view');
-const appView = document.getElementById('app-view');
-const loginForm = document.getElementById('login-form');
-const loginError = document.getElementById('login-error');
-const booksBody = document.getElementById('books-body');
-const bookSearch = document.getElementById('book-search');
-
-function getToken() {
-  return sessionStorage.getItem('library_token');
-}
-
-function setAuthenticated(user, token) {
-  sessionStorage.setItem('library_token', token);
-  sessionStorage.setItem('library_user', JSON.stringify(user));
-}
-
-function clearAuthenticated() {
-  sessionStorage.removeItem('library_token');
-  sessionStorage.removeItem('library_user');
-}
-
-async function api(path, options = {}) {
-  const token = getToken();
-  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
-  const body = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    throw new Error(body?.message || 'Request failed');
-  }
-  return body;
-}
-
-async function loadBooks() {
-  const q = encodeURIComponent(bookSearch.value.trim());
-  booksBody.innerHTML = '<tr><td colspan="4">Loading…</td></tr>';
-
-  try {
-    const books = await api(`/books${q ? `?q=${q}` : ''}`);
-    booksBody.innerHTML = books.length
-      ? books.map(book => `
-        <tr>
-          <td>${escapeHtml(book.title)}</td>
-          <td>${escapeHtml(book.author)}</td>
-          <td>${escapeHtml(book.category || '—')}</td>
-          <td>${book.available_quantity} / ${book.quantity}</td>
-        </tr>`).join('')
-      : '<tr><td colspan="4">No books found.</td></tr>';
-    document.getElementById('book-count').textContent = books.length;
-  } catch (error) {
-    booksBody.innerHTML = `<tr><td colspan="4">${escapeHtml(error.message)}</td></tr>`;
-  }
-}
-
-async function loadDashboard() {
-  const user = JSON.parse(sessionStorage.getItem('library_user') || '{}');
-  document.getElementById('user-info').textContent = `${user.fullName || user.username || ''} · ${user.role || ''}`;
-
-  try {
-    const [books, members, loans] = await Promise.all([
-      api('/books'),
-      api('/members'),
-      api('/loans?status=ISSUED')
-    ]);
-    document.getElementById('book-count').textContent = books.length;
-    document.getElementById('member-count').textContent = members.length;
-    document.getElementById('loan-count').textContent = loans.length;
-    renderBooks(books);
-  } catch (error) {
-    booksBody.innerHTML = `<tr><td colspan="4">${escapeHtml(error.message)}</td></tr>`;
-  }
-}
-
-function renderBooks(books) {
-  booksBody.innerHTML = books.length
-    ? books.map(book => `
-      <tr><td>${escapeHtml(book.title)}</td><td>${escapeHtml(book.author)}</td>
-      <td>${escapeHtml(book.category || '—')}</td><td>${book.available_quantity} / ${book.quantity}</td></tr>`).join('')
-    : '<tr><td colspan="4">No books found.</td></tr>';
-}
-
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, char => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
-  }[char]));
-}
-
-loginForm.addEventListener('submit', async event => {
-  event.preventDefault();
-  loginError.textContent = '';
-
-  try {
-    const data = await api('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({
-        username: document.getElementById('username').value,
-        password: document.getElementById('password').value
-      })
-    });
-    setAuthenticated(data.user, data.token);
-    showApp();
-  } catch (error) {
-    loginError.textContent = error.message;
-  }
-});
-
-document.getElementById('logout').addEventListener('click', () => {
-  clearAuthenticated();
-  appView.hidden = true;
-  loginView.hidden = false;
-});
-
-bookSearch.addEventListener('input', loadBooks);
-
-function showApp() {
-  loginView.hidden = true;
-  appView.hidden = false;
-  loadDashboard();
-}
-
-if (getToken()) showApp();
+const API_BASE=window.LIBRARY_API_BASE||'http://localhost:3000/api';
+const $=id=>document.getElementById(id);
+function token(){return sessionStorage.getItem('library_token')}
+function auth(user,t){sessionStorage.setItem('library_token',t);sessionStorage.setItem('library_user',JSON.stringify(user))}
+function logout(){sessionStorage.clear();$('app-view').hidden=true;$('login-view').hidden=false}
+async function api(path,opt={}){const headers={'Content-Type':'application/json',...(opt.headers||{})};if(token())headers.Authorization='Bearer '+token();const r=await fetch(API_BASE+path,{...opt,headers});const b=await r.json().catch(()=>null);if(!r.ok)throw Error(b?.message||'Request failed');return b}
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+function setTab(name){document.querySelectorAll('.tab-content').forEach(x=>x.hidden=x.id!==name+'-tab');document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.tab===name));if(name==='books')loadManageBooks();if(name==='members')loadMembers();if(name==='loans')loadLoans();if(name==='fines')loadFines()}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+async function loadDashboard(){const user=JSON.parse(sessionStorage.getItem('library_user')||'{}');$('user-info').textContent=(user.fullName||user.username||'')+' · '+(user.role||'');const [books,members,loans]=await Promise.all([api('/books'),api('/members'),api('/loans?status=ISSUED')]);$('book-count').textContent=books.length;$('member-count').textContent=members.length;$('loan-count').textContent=loans.length;renderBooks(books)}
+function renderBooks(rows){$('books-body').innerHTML=rows.length?rows.map(b=>'<tr><td>'+esc(b.title)+'</td><td>'+esc(b.author)+'</td><td>'+esc(b.category||'—')+'</td><td>'+b.available_quantity+' / '+b.quantity+'</td></tr>').join(''):'<tr><td colspan="4">No books found.</td></tr>'}
+async function searchBooks(){try{const q=encodeURIComponent($('book-search').value.trim());renderBooks(await api('/books'+(q?'?q='+q:'')))}catch(e){$('books-body').innerHTML='<tr><td colspan="4">'+esc(e.message)+'</td></tr>'}}
+$('book-search').oninput=searchBooks;
+async function loadManageBooks(){const rows=await api('/books');$('manage-books-body').innerHTML=rows.map(b=>'<tr><td>'+esc(b.title)+'</td><td>'+esc(b.author)+'</td><td>'+esc(b.isbn||'—')+'</td><td>'+b.available_quantity+' / '+b.quantity+'</td><td><button onclick="editBook('+b.book_id+')">Edit</button></td></tr>').join('')}
+$('new-book').onclick=()=>{$('book-form').hidden=false;$('book-id').value='';$('book-form').reset()}
+$('cancel-book').onclick=()=>{$('book-form').hidden=true}
+window.editBook=async id=>{const b=await api('/books/'+id);$('book-form').hidden=false;$('book-id').value=b.book_id;$('book-isbn').value=b.isbn||'';$('book-title').value=b.title;$('book-author').value=b.author;$('book-publisher').value=b.publisher||'';$('book-category').value=b.category||'';$('book-year').value=b.publication_year||'';$('book-quantity').value=b.quantity}
+$('book-form').onsubmit=async e=>{e.preventDefault();try{const id=$('book-id').value;const body={isbn:$('book-isbn').value,title:$('book-title').value,author:$('book-author').value,publisher:$('book-publisher').value,category:$('book-category').value,publication_year:$('book-year').value||null,quantity:Number($('book-quantity').value)};await api('/books'+(id?'/'+id:''),{method:id?'PUT':'POST',body:JSON.stringify(body)});$('book-form').hidden=true;await loadManageBooks();await loadDashboard()}catch(e){$('book-form-message').textContent=e.message}}
+async function loadMembers(){const rows=await api('/members');$('members-body').innerHTML=rows.map(m=>'<tr><td>'+esc(m.membership_no)+'</td><td>'+esc(m.full_name)+'</td><td>'+esc(m.email||'—')+'</td><td>'+esc(m.status)+'</td><td><button onclick="editMember('+m.member_id+')">Edit</button></td></tr>').join('')}
+$('new-member').onclick=()=>{$('member-form').hidden=false;$('member-id').value='';$('member-form').reset()}
+$('cancel-member').onclick=()=>{$('member-form').hidden=true}
+window.editMember=async id=>{const m=await api('/members/'+id);$('member-form').hidden=false;$('member-id').value=m.member_id;$('membership-no').value=m.membership_no;$('member-name').value=m.full_name;$('member-email').value=m.email||'';$('member-phone').value=m.phone||'';$('member-address').value=m.address||'';$('member-status').value=m.status}
+$('member-form').onsubmit=async e=>{e.preventDefault();try{const id=$('member-id').value;const body={membership_no:$('membership-no').value,full_name:$('member-name').value,email:$('member-email').value,phone:$('member-phone').value,address:$('member-address').value,status:$('member-status').value};await api('/members'+(id?'/'+id:''),{method:id?'PUT':'POST',body:JSON.stringify(body)});$('member-form').hidden=true;await loadMembers();await loadDashboard()}catch(e){$('member-form-message').textContent=e.message}}
+async function loadLoans(){const rows=await api('/loans');$('loans-body').innerHTML=rows.map(l=>'<tr><td>'+esc(l.title)+'</td><td>'+esc(l.full_name)+' (#'+l.member_id+')</td><td>'+l.issue_date+'</td><td>'+l.due_date+'</td><td>'+l.status+'</td><td><div class="action-group">'+(l.status!=='RETURNED'?'<button onclick="returnLoan('+l.loan_id+')">Return</button><button onclick="renewLoan('+l.loan_id+')">Renew</button>':'')+'</div></td></tr>').join('')}
+$('issue-form').onsubmit=async e=>{e.preventDefault();try{await api('/loans',{method:'POST',body:JSON.stringify({book_id:Number($('issue-book-id').value),member_id:Number($('issue-member-id').value),due_date:$('issue-due-date').value||undefined})});$('issue-message').textContent='Book issued successfully.';$('issue-form').reset();await loadLoans();await loadDashboard()}catch(e){$('issue-message').textContent=e.message}}
+window.returnLoan=async id=>{try{const r=await api('/loans/'+id+'/return',{method:'POST'});alert('Returned. Fine: ₹'+r.fineAmount);await loadLoans();await loadDashboard()}catch(e){alert(e.message)}}
+window.renewLoan=async id=>{try{await api('/loans/'+id+'/renew',{method:'POST'});await loadLoans()}catch(e){alert(e.message)}}
+$('refresh-loans').onclick=loadLoans;
+async function loadFines(){const rows=await api('/loans/fines');$('fines-body').innerHTML=rows.map(f=>'<tr><td>'+esc(f.full_name)+'</td><td>'+esc(f.title)+'</td><td>₹'+Number(f.amount).toFixed(2)+'</td><td>'+f.status+'</td><td>'+(f.status==='UNPAID'?'<button onclick="payFine('+f.fine_id+')">Mark Paid</button>':'')+'</td></tr>').join('')}
+window.payFine=async id=>{try{await api('/loans/fines/'+id+'/pay',{method:'POST'});await loadFines()}catch(e){alert(e.message)}}
+$('refresh-fines').onclick=loadFines;
+$('login-form').onsubmit=async e=>{e.preventDefault();$('login-error').textContent='';try{const d=await api('/auth/login',{method:'POST',body:JSON.stringify({username:$('username').value,password:$('password').value})});auth(d.user,d.token);showApp()}catch(e){$('login-error').textContent=e.message}}
+$('logout').onclick=logout;
+function showApp(){$('login-view').hidden=true;$('app-view').hidden=false;setTab('dashboard');loadDashboard().catch(e=>alert(e.message))}
+if(token())showApp();
