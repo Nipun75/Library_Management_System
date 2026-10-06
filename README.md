@@ -147,3 +147,68 @@ Work should be committed in small, meaningful increments. Suggested commit seque
 **Phase 1 — Foundation**
 
 The repository has been initialized with this project plan. Implementation will proceed incrementally, with each major feature delivered as a separate commit.
+
+
+## Local Development Setup
+
+### 1. Database
+
+Install MySQL 8+ and run:
+
+```bash
+mysql -u root -p < database/schema.sql
+```
+
+Do not use the placeholder password hashes from the schema in production. Generate real bcrypt hashes through the application or a trusted setup script.
+
+### 2. Backend
+
+```bash
+cd backend
+npm install
+```
+
+Create a `.env` file from the repository's `.env.example` and configure:
+
+```text
+PORT=3000
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=your_password
+DB_NAME=library_management
+JWT_SECRET=replace_with_a_long_random_secret
+JWT_EXPIRES_IN=2h
+```
+
+Start the API:
+
+```bash
+npm start
+```
+
+Health check:
+
+```text
+GET http://localhost:3000/api/health
+```
+
+### 3. Frontend
+
+The frontend is currently a static web application in `frontend/`. Serve that directory with any local static HTTP server. Configure `window.LIBRARY_API_BASE` when the API is hosted somewhere other than `http://localhost:3000/api`.
+
+## Quality Checklist
+
+Before a production/demo release:
+
+- [ ] Use real bcrypt password hashes for all accounts.
+- [ ] Use a strong, private JWT secret.
+- [ ] Keep `.env` out of Git.
+- [ ] Verify authentication and role restrictions.
+- [ ] Test book quantity consistency during issue/return.
+- [ ] Test overdue fine calculation.
+- [ ] Test renewal limits.
+- [ ] Test duplicate ISBN and membership numbers.
+- [ ] Test invalid and missing request data.
+- [ ] Add automated API tests for critical workflows.
+- [ ] Add database backup/recovery procedures.
