@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Library Management System</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="container">
+    <section id="login-view" class="card auth-card">
+      <h1>Library Management System</h1>
+      <p>Sign in to manage the library.</p>
+      <form id="login-form">
+        <label>Username<input id="username" required autocomplete="username"></label>
+        <label>Password<input id="password" type="password" required autocomplete="current-password"></label>
+        <button type="submit">Sign in</button>
+        <p id="login-error" class="error"></p>
+      </form>
+    </section>
+
+    <section id="app-view" hidden>
+      <header class="topbar">
+        <div>
+          <h1>Library Dashboard</h1>
+          <p id="user-info"></p>
+        </div>
+        <button id="logout" class="secondary">Logout</button>
+      </header>
+
+      <section class="stats">
+        <article class="card"><span>Books</span><strong id="book-count">—</strong></article>
+        <article class="card"><span>Members</span><strong id="member-count">—</strong></article>
+        <article class="card"><span>Active Loans</span><strong id="loan-count">—</strong></article>
+      </section>
+
+      <section class="card">
+        <div class="section-header">
+          <div>
+            <h2>Books</h2>
+            <p>Search the current catalogue and availability.</p>
+          </div>
+          <input id="book-search" placeholder="Title, author, ISBN or ID">
+        </div>
+        <div id="books-message"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Title</th><th>Author</th><th>Category</th><th>Available</th></tr></thead>
+            <tbody id="books-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
