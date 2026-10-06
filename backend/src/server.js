@@ -5,6 +5,7 @@ const express = require('express');
 const authRoutes = require('./routes/auth');
 const bookRoutes = require('./routes/books');
 const memberRoutes = require('./routes/members');
+const loanRoutes = require('./routes/loans');
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -18,6 +19,7 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api/members', memberRoutes);
+app.use('/api/loans', loanRoutes);
 
 app.use((err, _req, res, _next) => {
   console.error(err);
